@@ -48,7 +48,7 @@ fn main() -> Result<()> {
             },
             0.0,
             0.0,
-            imgproc::INTER_LINEAR,
+            imgproc::INTER_AREA,
         )?;
 
         let (bboxes, class_ids, confidences) = model.forward(&resized, 0.6, 0.7)?;
