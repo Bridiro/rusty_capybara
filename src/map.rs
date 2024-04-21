@@ -3,8 +3,10 @@ pub mod map {
     use std::collections::HashMap;
     use std::io::{self, BufRead};
 
+    type Position = (i32, i32);
+
     #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-    pub enum Direction {
+    enum Direction {
         Up,
         Down,
         Left,
@@ -53,13 +55,13 @@ pub mod map {
     }
 
     struct Cell {
-        pos: (i32, i32),
+        pos: Position,
         kind: Kind,
-        neighbors: HashMap<Direction, (i32, i32)>,
+        neighbors: HashMap<Direction, Position>,
     }
 
     impl Cell {
-        fn new(pos: (i32, i32), kind: Kind) -> Cell {
+        fn new(pos: Position, kind: Kind) -> Cell {
             Cell {
                 pos: pos,
                 kind: kind,
@@ -67,7 +69,7 @@ pub mod map {
             }
         }
 
-        fn add_neighbor(&mut self, direction: Direction, neighbor_pos: (i32, i32)) {
+        fn add_neighbor(&mut self, direction: Direction, neighbor_pos: Position) {
             if self.neighbors.contains_key(&direction) {
                 return;
             }
@@ -77,10 +79,10 @@ pub mod map {
 
     pub struct Maze {
         dir: Direction,
-        pos: (i32, i32),
-        last_checkpoint: (i32, i32),
-        cells: HashMap<(i32, i32), Cell>,
-        path: Vec<(i32, i32)>,
+        pos: Position,
+        last_checkpoint: Position,
+        cells: HashMap<Position, Cell>,
+        path: Vec<Position>,
     }
 
     impl Maze {
@@ -96,7 +98,7 @@ pub mod map {
             }
         }
 
-        fn coordinate_to_direction(&self, pos: (i32, i32)) -> Direction {
+        fn coordinate_to_direction(&self, pos: Position) -> Direction {
             if pos.0 == self.pos.0 && pos.1 == self.pos.1 - 1 {
                 return Direction::Up;
             } else if pos.0 == self.pos.0 && pos.1 == self.pos.1 + 1 {
@@ -159,7 +161,7 @@ pub mod map {
             }
         }
 
-        fn bfs(&mut self, tar: Kind) -> Option<Vec<(i32, i32)>> {
+        fn bfs(&mut self, tar: Kind) -> Option<Vec<Position>> {
             let mut queue = vec![self.pos];
             let mut visited = vec![self.pos];
             let mut parent = HashMap::new();
@@ -195,24 +197,26 @@ pub mod map {
                     current = parent[&current];
                 }
                 path.reverse();
+            }
+
+            if path.len() > 0 {
+                println!("path: {:?} to: {:?}", path, tar);
+                return Some(path);
             } else {
                 if let Some(path) = self.bfs(Kind::Start) {
                     println!("path: {:?} to: {:?}", path, tar);
-                    return Some(path);
+                    if path.len() > 0 {
+                        return Some(path);
+                    } else {
+                        return None;
+                    }
                 } else {
                     return None;
                 }
             }
-
-            println!("path: {:?} to: {:?}", path, tar);
-            if path.len() > 0 {
-                return Some(path);
-            } else {
-                return None;
-            }
         }
 
-        pub fn move_one(&mut self) -> Option<Direction> {
+        fn move_one(&mut self) -> Option<Direction> {
             if let Some(direction) = self.get_direction() {
                 self.dir = direction;
 
@@ -233,7 +237,7 @@ pub mod map {
             }
         }
 
-        pub fn add_cell(&mut self, direction: Direction) {
+        fn add_cell(&mut self, direction: Direction) {
             let cell_pos = match direction {
                 Direction::Up => (self.pos.0, self.pos.1 - 1),
                 Direction::Down => (self.pos.0, self.pos.1 + 1),

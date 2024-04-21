@@ -2,7 +2,7 @@ mod map;
 mod vision;
 use std::thread;
 
-use crate::map::map::{Direction, Maze};
+use crate::map::map::Maze;
 use crate::vision::vision::Vision;
 
 fn main() {
