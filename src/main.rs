@@ -1,6 +1,8 @@
+mod map;
 mod vision;
 use std::thread;
 
+use crate::map::map::{Direction, Maze};
 use crate::vision::vision::Vision;
 
 fn main() {
@@ -18,15 +20,16 @@ fn main() {
         net_height,
         class_filters,
     ) {
-        let handler = thread::spawn(move || {
+        thread::spawn(move || {
             if let Ok(()) = vis.run(0.6, 0.7) {
                 println!("Done!");
             } else {
                 println!("Error running object detection!");
             }
         });
-        handler.join().unwrap();
     } else {
         println!("Error creating object!");
     }
+
+    Maze::test_mapping();
 }
