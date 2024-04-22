@@ -152,16 +152,22 @@ pub mod map {
                 }
             }
 
-            if let Some(path) = self.bfs(Kind::Unknown) {
-                self.path = path;
-                let coordinate = self.path.remove(0);
-                Some(self.coordinate_to_direction(coordinate))
-            } else {
-                None
+            let path = self.bfs(Kind::Unknown);
+            if path.is_empty() {
+                let path = self.bfs(Kind::Start);
+                if !path.is_empty() {
+                    self.path = path;
+                    let coordinate = self.path.remove(0);
+                    return Some(self.coordinate_to_direction(coordinate));
+                }
+                return None;
             }
+            self.path = path;
+            let coordinate = self.path.remove(0);
+            Some(self.coordinate_to_direction(coordinate))
         }
 
-        fn bfs(&mut self, tar: Kind) -> Option<Vec<Position>> {
+        fn bfs(&mut self, tar: Kind) -> Vec<Position> {
             let mut queue = vec![self.pos];
             let mut visited = vec![self.pos];
             let mut parent = HashMap::new();
@@ -199,25 +205,37 @@ pub mod map {
                 path.reverse();
             }
 
-            if path.len() > 0 {
-                println!("path: {:?} to: {:?}", path, tar);
-                return Some(path);
-            } else {
-                if let Some(path) = self.bfs(Kind::Start) {
-                    println!("path: {:?} to: {:?}", path, tar);
-                    if path.len() > 0 {
-                        return Some(path);
-                    } else {
-                        return None;
-                    }
-                } else {
-                    return None;
-                }
+            println!("path: {:?} to: {:?}", path, tar);
+            path
+        }
+
+        fn dir_to_dir_relative_to_robot(&self, dir: Direction) -> Direction {
+            match self.dir {
+                Direction::Up => dir,
+                Direction::Down => match dir {
+                    Direction::Up => Direction::Down,
+                    Direction::Down => Direction::Up,
+                    Direction::Left => Direction::Right,
+                    Direction::Right => Direction::Left,
+                },
+                Direction::Left => match dir {
+                    Direction::Up => Direction::Right,
+                    Direction::Down => Direction::Left,
+                    Direction::Left => Direction::Up,
+                    Direction::Right => Direction::Down,
+                },
+                Direction::Right => match dir {
+                    Direction::Up => Direction::Left,
+                    Direction::Down => Direction::Right,
+                    Direction::Left => Direction::Down,
+                    Direction::Right => Direction::Right,
+                },
             }
         }
 
         fn move_one(&mut self) -> Option<Direction> {
             if let Some(direction) = self.get_direction() {
+                let dir_rel = self.dir_to_dir_relative_to_robot(direction);
                 self.dir = direction;
 
                 match direction {
@@ -231,7 +249,8 @@ pub mod map {
                         cell.kind = Kind::Empty;
                     }
                 }
-                Some(direction)
+
+                Some(dir_rel)
             } else {
                 None
             }
@@ -268,6 +287,21 @@ pub mod map {
                     .add_neighbor(direction, cell_pos);
                 new_cell.add_neighbor(direction.back(), self.pos);
                 self.cells.insert(cell_pos, new_cell);
+            }
+        }
+
+        pub fn robot_scan(&mut self, front: bool, right: bool, left: bool, back: bool) {
+            if front {
+                self.add_cell(self.dir);
+            }
+            if right {
+                self.add_cell(self.dir.right());
+            }
+            if left {
+                self.add_cell(self.dir.left());
+            }
+            if back {
+                self.add_cell(self.dir.back());
             }
         }
 
