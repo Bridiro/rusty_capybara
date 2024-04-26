@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 od_opencv = "0.1.5"
 opencv = "0.88.9"
+rppal = "0.17.1"

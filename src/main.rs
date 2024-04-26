@@ -1,8 +1,10 @@
 mod map;
+mod sensors;
 mod vision;
 use std::thread;
 
 use crate::map::map::Maze;
+use crate::sensors::sensors::MPU6050;
 use crate::vision::vision::Vision;
 
 fn main() {
@@ -32,4 +34,25 @@ fn main() {
     }
 
     Maze::test_mapping();
+
+    let bus = 1;
+    if let Ok(mut mpu) = MPU6050::new(bus) {
+        if let Ok(()) = mpu.run() {
+            println!("Done!");
+            for _ in 0..100 {
+                println!(
+                    "Roll: {}  Pitch: {}  Yaw: {}",
+                    mpu.get_roll(),
+                    mpu.get_pitch(),
+                    mpu.get_yaw()
+                );
+                thread::sleep(std::time::Duration::from_secs(1));
+            }
+            mpu.stop();
+        } else {
+            println!("Error running MPU6050!");
+        }
+    } else {
+        println!("Error creating MPU6050!");
+    }
 }
