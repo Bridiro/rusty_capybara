@@ -7,6 +7,8 @@ The project focuses on building a program that guide a robot (partecipating in t
 ## Index
 
 -   [Sensors](#sensors)
+    -   [IMU](#imu)
+    -   [TOFs](#tofs)
 -   [Mapping](#mapping)
 -   [Vision](#vision)
 -   [PIDs](#pids)
@@ -14,10 +16,20 @@ The project focuses on building a program that guide a robot (partecipating in t
 ### <a id="sensors"></a>Sensors
 
 We're using **VL8160X time-of-flight** sensors, that provides the perfect accuracy and range for the project. They uses **i2c** as communication protocol, so we can have 6 on the same bus. On **i2c** we have the **IMU** as well, it is the **MPU6050**. With that and with the sensors we can use **algorithms** that will help our robot explore the maze in a safe way.
+The **IMU** is on the **i2c bus 1** and the **TOFs** on the **i2c bus 4**
+
+-   <a id="imu"></a>**IMU**: the sensor have a library that permit continuosly reading from him while doing other things, to always have the best angle possible.
+
+    -   You first create the object: `let mpu = MPU6050::new(1)`
+    -   Then you start measuring: `mpu.start()`
+    -   Get the data you need: `mpu.get_yaw()`
+    -   Stop polling: `mpu.stop()`
+
+-   <a id="tofs"></a>**TOFs**: the tofs have a library that permit easy reading of the distances. Having all of them the same address, we first need to change it at the start of the program, and doing it is fairly easy, we just need to shut all them down except for the one who need the address changed.
 
 ### <a id="mapping"></a>Mapping
 
-The goal is to have the whole labirinth explored, and to archieve this, we need to map it. The algorith is still to decide, but we want it to be flexible and to work in every condition. The maze can contains **checkpoints**, **black tiles**, **blue tiles** and **victims**. This is the **RESCUE MAZE** so the very goal here is to find all the victims. In the map we will also store where victims are, so we can skip them if we encounter the same 2 times.
+The goal is to have the whole labirinth explored, and to archieve this, we need to map it. The maze can contains **checkpoints**, **black tiles**, **blue tiles** and **victims**. This is the **RESCUE MAZE** so the very goal here is to find all the victims. In the map we will also store where victims are, so we can skip them if we encounter the same 2 times.
 
 ### <a id="vision"></a>Vision
 

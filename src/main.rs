@@ -4,8 +4,8 @@ mod vision;
 use std::thread;
 
 use crate::map::map::Maze;
-use crate::sensors::sensors::MPU6050;
-use crate::vision::vision::Vision;
+use crate::sensors::mpu6050::MPU6050;
+use crate::vision::Vision;
 
 fn main() {
     let camera_index = 0;
