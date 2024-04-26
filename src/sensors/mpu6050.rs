@@ -46,10 +46,8 @@ impl MPU6050 {
         let yaw = self.yaw.clone();
         let running = self.running.clone();
 
-        i2c.lock().unwrap().set_slave_address(ADDR)?;
-
         let (acc_x_err, acc_y_err, _acc_z_err, gyro_x_err, gyro_y_err, gyro_z_err) =
-            self.calculate_error().expect("Error calculating error");
+            self.calculate_error(500).expect("Error calculating error");
 
         std::thread::spawn(move || {
             let mut previous_time = std::time::Instant::now();
@@ -58,9 +56,10 @@ impl MPU6050 {
             *roll.lock().unwrap() = 0.0;
             *pitch.lock().unwrap() = 0.0;
             *yaw.lock().unwrap() = 0.0;
-            let mut last_yaw_rate = 0.0;
             *running.lock().unwrap() = true;
-            while running.lock().unwrap().clone() {
+            let mut last_yaw_rate = 0.0;
+
+            while *running.lock().unwrap() {
                 let acc_x = read_raw_data(&mut i2c.lock().unwrap(), ACCEL_XOUT_H)
                     .expect("Failed to read raw data") as f32
                     / 16384.0;
@@ -98,14 +97,12 @@ impl MPU6050 {
                 *roll.lock().unwrap() = 0.98 * gyro_angle_x + 0.02 * acc_angle_x;
                 *pitch.lock().unwrap() = 0.98 * gyro_angle_y + 0.02 * acc_angle_y;
 
-                let prev_yaw = *yaw.lock().unwrap();
-                *yaw.lock().unwrap() =
-                    prev_yaw + (gyro_z - gyro_z_err + last_yaw_rate) * 0.5 * elapsed_time;
+                *yaw.lock().unwrap() += (gyro_z - gyro_z_err + last_yaw_rate) * 0.5 * elapsed_time;
                 last_yaw_rate = gyro_z - gyro_z_err;
 
                 *yaw.lock().unwrap() %= 360.0;
 
-                std::thread::sleep(std::time::Duration::from_millis(10));
+                std::thread::sleep(std::time::Duration::from_millis(5));
             }
         });
 
@@ -129,6 +126,8 @@ impl MPU6050 {
     }
 
     fn init(&mut self) -> Result<(), Box<dyn Error>> {
+        self.i2c.lock().unwrap().set_slave_address(ADDR)?;
+
         self.i2c
             .lock()
             .unwrap()
@@ -153,7 +152,10 @@ impl MPU6050 {
         Ok(())
     }
 
-    fn calculate_error(&mut self) -> Result<(f32, f32, f32, f32, f32, f32), Box<dyn Error>> {
+    fn calculate_error(
+        &mut self,
+        samples: i32,
+    ) -> Result<(f32, f32, f32, f32, f32, f32), Box<dyn Error>> {
         let mut acc_x = 0.0;
         let mut acc_y = 0.0;
         let mut acc_z = 0.0;
@@ -161,7 +163,7 @@ impl MPU6050 {
         let mut gyro_y = 0.0;
         let mut gyro_z = 0.0;
 
-        for _ in 0..500 {
+        for _ in 0..samples {
             acc_x += read_raw_data(&mut self.i2c.lock().unwrap(), ACCEL_XOUT_H)? as f32 / 16384.0;
             acc_y += read_raw_data(&mut self.i2c.lock().unwrap(), ACCEL_YOUT_H)? as f32 / 16384.0;
             acc_z += read_raw_data(&mut self.i2c.lock().unwrap(), ACCEL_ZOUT_H)? as f32 / 16384.0;
@@ -170,12 +172,12 @@ impl MPU6050 {
             gyro_z += read_raw_data(&mut self.i2c.lock().unwrap(), GYRO_ZOUT_H)? as f32 / 131.0;
         }
 
-        acc_x /= 500.0;
-        acc_y /= 500.0;
-        acc_z /= 500.0;
-        gyro_x /= 500.0;
-        gyro_y /= 500.0;
-        gyro_z /= 500.0;
+        acc_x /= samples as f32;
+        acc_y /= samples as f32;
+        acc_z /= samples as f32;
+        gyro_x /= samples as f32;
+        gyro_y /= samples as f32;
+        gyro_z /= samples as f32;
 
         Ok((acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z))
     }

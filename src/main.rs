@@ -3,7 +3,7 @@ mod sensors;
 mod vision;
 use std::thread;
 
-use crate::map::map::Maze;
+use crate::map::Maze;
 use crate::sensors::mpu6050::MPU6050;
 use crate::vision::Vision;
 
@@ -39,14 +39,14 @@ fn main() {
     if let Ok(mut mpu) = MPU6050::new(bus) {
         if let Ok(()) = mpu.run() {
             println!("Done!");
-            for _ in 0..100 {
+            for _ in 0..200 {
                 println!(
                     "Roll: {}  Pitch: {}  Yaw: {}",
                     mpu.get_roll(),
                     mpu.get_pitch(),
                     mpu.get_yaw()
                 );
-                thread::sleep(std::time::Duration::from_secs(1));
+                thread::sleep(std::time::Duration::from_millis(300));
             }
             mpu.stop();
         } else {
