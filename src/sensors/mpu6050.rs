@@ -77,8 +77,6 @@ impl MPU6050 {
                     (-(acc_x / (acc_y.powi(2) + acc_z.powi(2)).sqrt()).atan() * 180.0 / PI)
                         - acc_y_err;
 
-                let elapsed_time = previous_time.elapsed().as_secs_f32();
-
                 let gyro_x = read_raw_data(&mut i2c.lock().unwrap(), GYRO_XOUT_H)
                     .expect("Failed to read raw data") as f32
                     / 131.0;
@@ -89,18 +87,19 @@ impl MPU6050 {
                     .expect("Failed to read raw data") as f32
                     / 131.0;
 
+                let elapsed_time = previous_time.elapsed().as_secs_f32();
                 previous_time = std::time::Instant::now();
 
                 gyro_angle_x += (gyro_x - gyro_x_err) * elapsed_time;
                 gyro_angle_y += (gyro_y - gyro_y_err) * elapsed_time;
 
-                *roll.lock().unwrap() = 0.98 * gyro_angle_x + 0.02 * acc_angle_x;
-                *pitch.lock().unwrap() = 0.98 * gyro_angle_y + 0.02 * acc_angle_y;
-
                 *yaw.lock().unwrap() += (gyro_z - gyro_z_err + last_yaw_rate) * 0.5 * elapsed_time;
                 last_yaw_rate = gyro_z - gyro_z_err;
 
                 *yaw.lock().unwrap() %= 360.0;
+
+                *roll.lock().unwrap() = 0.98 * gyro_angle_x + 0.02 * acc_angle_x;
+                *pitch.lock().unwrap() = 0.98 * gyro_angle_y + 0.02 * acc_angle_y;
 
                 std::thread::sleep(std::time::Duration::from_millis(5));
             }
