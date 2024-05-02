@@ -5,6 +5,7 @@ use std::thread;
 
 use crate::map::Maze;
 use crate::sensors::mpu6050::MPU6050;
+use crate::sensors::vl6180x::VL6180X;
 use crate::vision::Vision;
 
 fn main() {
@@ -54,5 +55,20 @@ fn main() {
         }
     } else {
         println!("Error creating MPU6050!");
+    }
+
+    let bus = 1;
+    if let Ok(mut tof) = VL6180X::new(bus, Some(0x30)) {
+        if let Ok(()) = tof.begin() {
+            println!("Done!");
+            for _ in 0..200 {
+                println!("Range: {}mm", tof.range().unwrap());
+                thread::sleep(std::time::Duration::from_millis(300));
+            }
+        } else {
+            println!("Error running VL6180X!");
+        }
+    } else {
+        println!("Error creating VL6180X!");
     }
 }
