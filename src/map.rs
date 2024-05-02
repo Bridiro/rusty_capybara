@@ -60,7 +60,7 @@ struct Cell {
 }
 
 impl Cell {
-    fn new(pos: Position, kind: Kind) -> Cell {
+    fn new(pos: Position, kind: Kind) -> Self {
         Cell {
             pos: pos,
             kind: kind,
@@ -85,7 +85,7 @@ pub struct Maze {
 }
 
 impl Maze {
-    pub fn new() -> Maze {
+    pub fn new() -> Self {
         let mut cells = HashMap::new();
         cells.insert((0, 0), Cell::new((0, 0), Kind::Start));
         Maze {
