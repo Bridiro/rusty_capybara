@@ -57,8 +57,8 @@ The `MPU6050` struct provides methods to get the roll, pitch, and yaw angles, wh
 It is recommended to use these methods to access the sensor data in a thread-safe manner.
 */
 use super::read_raw_data;
+use anyhow::Result;
 use rppal::i2c::I2c;
-use std::error::Error;
 use std::f32::consts::PI;
 use std::sync::{Arc, Mutex};
 
@@ -166,9 +166,9 @@ impl MPU6050 {
         let running = self.running.clone();
 
         let (acc_x_err, acc_y_err, _acc_z_err, gyro_x_err, gyro_y_err, gyro_z_err) =
-            self.calculate_error(500).expect("Error calculating error");
+            self.calculate_error(500)?;
 
-        std::thread::spawn(move || {
+        std::thread::spawn(move || -> Result<()> {
             let mut previous_time = std::time::Instant::now();
             let mut gyro_angle_x = 0.0;
             let mut gyro_angle_y = 0.0;
@@ -179,15 +179,9 @@ impl MPU6050 {
             let mut last_yaw_rate = 0.0;
 
             while *running.lock().unwrap() {
-                let acc_x = read_raw_data(&mut i2c.lock().unwrap(), ACCEL_XOUT_H)
-                    .expect("Failed to read raw data") as f32
-                    / 16384.0;
-                let acc_y = read_raw_data(&mut i2c.lock().unwrap(), ACCEL_YOUT_H)
-                    .expect("Failed to read raw data") as f32
-                    / 16384.0;
-                let acc_z = read_raw_data(&mut i2c.lock().unwrap(), ACCEL_ZOUT_H)
-                    .expect("Failed to read raw data") as f32
-                    / 16384.0;
+                let acc_x = read_raw_data(&mut i2c.lock().unwrap(), ACCEL_XOUT_H)? as f32 / 16384.0;
+                let acc_y = read_raw_data(&mut i2c.lock().unwrap(), ACCEL_YOUT_H)? as f32 / 16384.0;
+                let acc_z = read_raw_data(&mut i2c.lock().unwrap(), ACCEL_ZOUT_H)? as f32 / 16384.0;
 
                 let acc_angle_x = (acc_y / (acc_x.powi(2) + acc_z.powi(2)).sqrt()).atan() * 180.0
                     / PI
@@ -196,15 +190,9 @@ impl MPU6050 {
                     (-(acc_x / (acc_y.powi(2) + acc_z.powi(2)).sqrt()).atan() * 180.0 / PI)
                         - acc_y_err;
 
-                let gyro_x = read_raw_data(&mut i2c.lock().unwrap(), GYRO_XOUT_H)
-                    .expect("Failed to read raw data") as f32
-                    / 131.0;
-                let gyro_y = read_raw_data(&mut i2c.lock().unwrap(), GYRO_YOUT_H)
-                    .expect("Failed to read raw data") as f32
-                    / 131.0;
-                let gyro_z = read_raw_data(&mut i2c.lock().unwrap(), GYRO_ZOUT_H)
-                    .expect("Failed to read raw data") as f32
-                    / 131.0;
+                let gyro_x = read_raw_data(&mut i2c.lock().unwrap(), GYRO_XOUT_H)? as f32 / 131.0;
+                let gyro_y = read_raw_data(&mut i2c.lock().unwrap(), GYRO_YOUT_H)? as f32 / 131.0;
+                let gyro_z = read_raw_data(&mut i2c.lock().unwrap(), GYRO_ZOUT_H)? as f32 / 131.0;
 
                 let elapsed_time = previous_time.elapsed().as_secs_f32();
                 previous_time = std::time::Instant::now();
@@ -222,6 +210,7 @@ impl MPU6050 {
 
                 std::thread::sleep(std::time::Duration::from_millis(5));
             }
+            Ok(())
         });
 
         Ok(())
@@ -342,7 +331,7 @@ impl MPU6050 {
         *self.running.lock().unwrap() = false;
     }
 
-    fn init(&mut self) -> Result<(), Box<dyn Error>> {
+    fn init(&mut self) -> Result<()> {
         self.i2c.lock().unwrap().set_slave_address(ADDR)?;
 
         self.i2c

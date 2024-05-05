@@ -43,15 +43,15 @@ fn main() {
         detection_channel,
     ) {
         if let Ok(()) = vis.run(0.6, 0.7, false) {
-            for _ in 0..100 {
+            for _ in 0..200 {
                 if let Ok(detection) = result_channel.recv() {
                     println!(
                         "Class: {}  Confidence: {}  BBox: {:?}",
                         detection.class_label, detection.confidence, detection.bbox
                     );
                 }
+                thread::sleep(std::time::Duration::from_millis(300));
             }
-            vis.stop();
         }
     } else {
         println!("Error creating object!");
