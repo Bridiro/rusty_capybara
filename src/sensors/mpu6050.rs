@@ -114,7 +114,7 @@ impl MPU6050 {
     rppal = "0.17.1"
     ```
     */
-    pub fn new(bus: u8) -> Result<MPU6050, Box<dyn Error>> {
+    pub fn new(bus: u8) -> Result<MPU6050> {
         let i2c = Arc::new(Mutex::new(I2c::with_bus(bus)?));
         let mut mpu = MPU6050 {
             i2c,
@@ -158,7 +158,7 @@ impl MPU6050 {
     You can enable the I2C bus by following the instructions in the Raspberry Pi documentation.
     Make sure to enable the I2C bus before running the program.
     */
-    pub fn run(&mut self) -> Result<(), rppal::i2c::Error> {
+    pub fn run(&mut self) -> Result<()> {
         let i2c = self.i2c.clone();
         let roll = self.roll.clone();
         let pitch = self.pitch.clone();
@@ -379,10 +379,7 @@ impl MPU6050 {
     let (acc_x_err, acc_y_err, acc_z_err, gyro_x_err, gyro_y_err, gyro_z_err) = mpu.calculate_error(500).unwrap();
     ```
     */
-    fn calculate_error(
-        &mut self,
-        samples: i32,
-    ) -> Result<(f32, f32, f32, f32, f32, f32), Box<dyn Error>> {
+    fn calculate_error(&mut self, samples: i32) -> Result<(f32, f32, f32, f32, f32, f32)> {
         let mut acc_x = 0.0;
         let mut acc_y = 0.0;
         let mut acc_z = 0.0;
