@@ -1,3 +1,61 @@
+/*!
+This module contains the implementation of the MPU6050 sensor.
+
+The MPU6050 is a 6-axis motion tracking device that combines a 3-axis gyroscope and a 3-axis accelerometer.
+It provides measurements of roll, pitch, and yaw angles.
+
+# Example
+
+```rust
+use rusty_capybara::sensors::mpu6050::MPU6050;
+
+fn main() {
+    // Create a new MPU6050 sensor instance on I2C bus 1
+    let mut mpu = MPU6050::new(1).unwrap();
+
+    // Start reading sensor data
+    mpu.run().unwrap();
+
+    // Get roll, pitch, and yaw angles
+    let roll = mpu.get_roll();
+    let pitch = mpu.get_pitch();
+    let yaw = mpu.get_yaw();
+
+    // Stop reading sensor data
+    mpu.stop();
+}
+```
+
+# References
+
+- [MPU-6050 Datasheet](https://www.invensense.com/wp-content/uploads/2015/02/MPU-6000-Datasheet1.pdf)
+- [MPU-6050 Register Map](https://www.invensense.com/wp-content/uploads/2015/02/MPU-6000-Register-Map1.pdf)
+- [MPU-6050 Tutorial](https://howtomechatronics.com/tutorials/arduino/arduino-and-mpu6050-accelerometer-and-gyroscope-tutorial)
+- [RPPAL Documentation](https://docs.rs/rppal)
+
+# Note
+
+This implementation uses the `rppal` crate for I2C communication and error handling.
+Make sure to add `rppal` as a dependency in your `Cargo.toml` file.
+
+```toml
+[dependencies]
+rppal = "0.17.1"
+```
+
+The MPU6050 sensor must be connected to the I2C bus of the Raspberry Pi.
+The I2C bus must be enabled on the Raspberry Pi.
+You can enable the I2C bus by following the instructions in the Raspberry Pi documentation.
+
+Make sure to enable the I2C bus before running the program.
+
+# Safety
+
+This implementation uses multi-threading to continuously read sensor data.
+It is important to properly handle synchronization and ensure thread safety when accessing the sensor data.
+The `MPU6050` struct provides methods to get the roll, pitch, and yaw angles, which internally lock the data using a mutex.
+It is recommended to use these methods to access the sensor data in a thread-safe manner.
+*/
 use super::read_raw_data;
 use rppal::i2c::I2c;
 use std::error::Error;
@@ -17,6 +75,10 @@ const GYRO_XOUT_H: u16 = 0x43;
 const GYRO_YOUT_H: u16 = 0x45;
 const GYRO_ZOUT_H: u16 = 0x47;
 
+/**
+The MPU6050 struct represents the MPU6050 sensor.
+It stores values of the angles on all axis.
+*/
 pub struct MPU6050 {
     i2c: Arc<Mutex<I2c>>,
     roll: Arc<Mutex<f32>>,
@@ -26,6 +88,32 @@ pub struct MPU6050 {
 }
 
 impl MPU6050 {
+    /**
+    Creates a new MPU6050 sensor instance on the specified I2C bus.
+    # Arguments
+    * `bus` - The I2C bus number (e.g., 1 for `/dev/i2c-1`).
+    # Returns
+    A `Result` containing the `MPU6050` sensor instance if successful, or an error if the sensor could not be initialized.
+    # Errors
+    This method returns an error if the I2C bus could not be opened or if there was an error initializing the sensor.
+    # Example
+    ```rust
+    use rusty_capybara::sensors::mpu6050::MPU6050;
+
+    let mut mpu = MPU6050::new(1).unwrap();
+    ```
+    # Safety
+    This method accesses the I2C bus and initializes the MPU6050 sensor.
+    It is important to handle errors and ensure that the sensor is properly connected and configured.
+    Make sure to enable the I2C bus on the Raspberry Pi before running this method.
+    The I2C bus must be enabled in the Raspberry Pi configuration.
+    This method uses the `rppal` crate for I2C communication and error handling.
+    Make sure to add `rppal` as a dependency in your `Cargo.toml` file.
+    ```toml
+    [dependencies]
+    rppal = "0.17.1"
+    ```
+    */
     pub fn new(bus: u8) -> Result<MPU6050, Box<dyn Error>> {
         let i2c = Arc::new(Mutex::new(I2c::with_bus(bus)?));
         let mut mpu = MPU6050 {
@@ -39,6 +127,37 @@ impl MPU6050 {
         Ok(mpu)
     }
 
+    /**
+    Starts reading sensor data from the MPU6050 sensor.
+    This method continuously reads sensor data and calculates the roll, pitch, and yaw angles.
+    The roll, pitch, and yaw angles can be accessed using the [`get_roll`](#method.get_pitch), [`get_pitch`](#method.get_pitch), and [`get_yaw`](#method.get_yaw) methods.
+    # Returns
+    A `Result` indicating whether the sensor data reading was started successfully.
+    # Errors
+    This method returns an error if there was an error reading sensor data or calculating the angles.
+    # Example
+    ```rust
+    use rusty_capybara::sensors::mpu6050::MPU6050;
+
+    let mut mpu = MPU6050::new(1).unwrap();
+    mpu.run().unwrap();
+    ```
+    # Safety
+    This method uses multi-threading to continuously read sensor data.
+    It is important to properly handle synchronization and ensure thread safety when accessing the sensor data.
+    The `MPU6050` struct provides methods to get the [roll](#method.get_pitch), [pitch](#method.get_pitch), and [yaw](#method.get_yaw) angles, which internally lock the data using a mutex.
+    It is recommended to use these methods to access the sensor data in a thread-safe manner.
+    This method uses the `rppal` crate for I2C communication and error handling.
+    Make sure to add `rppal` as a dependency in your `Cargo.toml` file.
+    ```toml
+    [dependencies]
+    rppal = "0.17.1"
+    ```
+    The MPU6050 sensor must be connected to the I2C bus of the Raspberry Pi.
+    The I2C bus must be enabled on the Raspberry Pi.
+    You can enable the I2C bus by following the instructions in the Raspberry Pi documentation.
+    Make sure to enable the I2C bus before running the program.
+    */
     pub fn run(&mut self) -> Result<(), rppal::i2c::Error> {
         let i2c = self.i2c.clone();
         let roll = self.roll.clone();
@@ -108,18 +227,117 @@ impl MPU6050 {
         Ok(())
     }
 
+    /**
+    Gets the roll angle in degrees.
+    The roll angle represents the rotation around the x-axis.
+    # Returns
+    The roll angle in degrees.
+    # Example
+    ```rust
+    use rusty_capybara::sensors::mpu6050::MPU6050;
+
+    let mut mpu = MPU6050::new(1).unwrap();
+    mpu.run().unwrap();
+    let roll = mpu.get_roll();
+    ```
+    # Safety
+    This method accesses the roll angle data using a mutex.
+    It is important to ensure thread safety when accessing the sensor data.
+    Make sure to call this method after starting the sensor data reading using the [`run`](#method.run) method.
+    The roll angle is continuously updated while the sensor data reading is running.
+    It is recommended to call this method periodically to get the latest roll angle value.
+    This method uses the `rppal` crate for I2C communication and error handling.
+    Make sure to add `rppal` as a dependency in your `Cargo.toml` file.
+    ```toml
+    [dependencies]
+    rppal = "0.17.1"
+    ```
+    The MPU6050 sensor must be connected to the I2C bus of the Raspberry Pi.
+    The I2C bus must be enabled on the Raspberry Pi.
+    You can enable the I2C bus by following the instructions in the Raspberry Pi documentation.
+    Make sure to enable the I2C bus before running the program.
+    */
     pub fn get_roll(&self) -> f32 {
         *self.roll.lock().unwrap()
     }
 
+    /**
+    Gets the pitch angle in degrees.
+    The pitch angle represents the rotation around the y-axis.
+    # Returns
+    The pitch angle in degrees.
+    # Example
+    ```rust
+    use rusty_capybara::sensors::mpu6050::MPU6050;
+
+    let mut mpu = MPU6050::new(1).unwrap();
+    mpu.run().unwrap();
+    let pitch = mpu.get_pitch();
+    ```
+    # Safety
+    This method accesses the pitch angle data using a mutex.
+    It is important to ensure thread safety when accessing the sensor data.
+    Make sure to call this method after starting the sensor data reading using the [`run`](#method.run) method.
+    The pitch angle is continuously updated while the sensor data reading is running.
+    It is recommended to call this method periodically to get the latest pitch angle value.
+    This method uses the `rppal` crate for I2C communication and error handling.
+    Make sure to add `rppal` as a dependency in your `Cargo.toml` file.
+    ```toml
+    [dependencies]
+    rppal = "0.17.1"
+    ```
+    The MPU6050 sensor must be connected to the I2C bus of the Raspberry Pi.
+    The I2C bus must be enabled on the Raspberry Pi.
+    You can enable the I2C bus by following the instructions in the Raspberry Pi documentation.
+    Make sure to enable the I2C bus before running the program.
+    */
     pub fn get_pitch(&self) -> f32 {
         *self.pitch.lock().unwrap()
     }
 
+    /**
+    Gets the yaw angle in degrees.
+    The pitch angle represents the rotation around the z-axis.
+    # Returns
+    The yaw angle in degrees.
+    # Example
+    ```rust
+    use rusty_capybara::sensors::mpu6050::MPU6050;
+
+    let mut mpu = MPU6050::new(1).unwrap();
+    mpu.run().unwrap();
+    let yaw = mpu.get_yaw();
+    ```
+    # Safety
+    This method accesses the yaw angle data using a mutex.
+    It is important to ensure thread safety when accessing the sensor data.
+    Make sure to call this method after starting the sensor data reading using the [`run`](#method.run) method.
+    The yaw angle is continuously updated while the sensor data reading is running.
+    It is recommended to call this method periodically to get the latest yaw angle value.
+    This method uses the `rppal` crate for I2C communication and error handling.
+    Make sure to add `rppal` as a dependency in your `Cargo.toml` file.
+    ```toml
+    [dependencies]
+    rppal = "0.17.1"
+    ```
+    The MPU6050 sensor must be connected to the I2C bus of the Raspberry Pi.
+    The I2C bus must be enabled on the Raspberry Pi.
+    You can enable the I2C bus by following the instructions in the Raspberry Pi documentation.
+    Make sure to enable the I2C bus before running the program.
+    */
     pub fn get_yaw(&self) -> f32 {
         *self.yaw.lock().unwrap()
     }
 
+    /// Stops reading sensor data from the MPU6050 sensor.
+    /// This method stops the thread that reads sensor data and calculates the angles.
+    /// # Example
+    /// ```rust
+    /// use rusty_capybara::sensors::mpu6050::MPU6050;
+    ///
+    /// let mut mpu = MPU6050::new(1).unwrap();
+    /// mpu.run().unwrap();
+    /// mpu.stop();
     pub fn stop(&self) {
         *self.running.lock().unwrap() = false;
     }
@@ -151,6 +369,27 @@ impl MPU6050 {
         Ok(())
     }
 
+    /**
+    Calculate the error in the accelerometer and gyroscope readings.
+    This method reads raw data from the accelerometer and gyroscope and calculates the average error.
+    The error values are used to compensate for the sensor drift.
+    # Arguments
+    * `samples` - The number of samples to read for calculating the error.
+    # Returns
+    A tuple containing the average error values for the accelerometer and gyroscope readings.
+    The error values are calculated as follows:
+    - Accelerometer error: The average accelerometer readings in the x, y, and z axes.
+    - Gyroscope error: The average gyroscope readings in the x, y, and z axes.
+    # Errors
+    This method returns an error if there was an error reading raw data from the sensor.
+    # Example
+    ```rust
+    use rusty_capybara::sensors::mpu6050::MPU6050;
+
+    let mut mpu = MPU6050::new(1).unwrap();
+    let (acc_x_err, acc_y_err, acc_z_err, gyro_x_err, gyro_y_err, gyro_z_err) = mpu.calculate_error(500).unwrap();
+    ```
+    */
     fn calculate_error(
         &mut self,
         samples: i32,
