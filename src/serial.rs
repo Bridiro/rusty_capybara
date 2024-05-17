@@ -1,13 +1,13 @@
-use std::{process::Command, time::Duration};
-
+#![allow(dead_code)]
 use rppal::uart::{Parity, Uart};
+use std::{process::Command, time::Duration};
 
 pub struct Serial {
     uart: Uart,
 }
 
 impl Serial {
-    pub fn new(baud_rate: i32) -> Self {
+    pub fn new(baud_rate: u32) -> Self {
         let output = Command::new("sh")
             .arg("-c")
             .arg("ls /dev/ttyACM*")
