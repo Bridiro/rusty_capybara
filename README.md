@@ -33,7 +33,7 @@ The goal is to have the whole labirinth explored, and to archieve this, we need 
 
 ### <a id="vision"></a>Vision
 
-To find the victims we need **computer vision**. Computer vision is a brach of **AI** that focuses on finding **matching patterns** in arrays (in this case **images**). This images are retrived by opencv, and using a **YOLOv7** model by **Ultralytics** we can try to find the victims. These victims can be **a green square**, **a red square**, **a yellow square**, **an H**, **an S** or **an U**. They are attached to the walls, so we need cameras on both sides of the robot to see them. Loading the model in Rust is accomplished thanks to the crate [od_opencv](https://crates.io/crates/od_opencv).
+To find the victims we need **computer vision**. Computer vision is a brach of **AI** that focuses on finding **matching patterns** in arrays (in this case **images**). This images are retrived by opencv, and using a **YOLOv8** model by **Ultralytics** we can try to find the victims. These victims can be **a green square**, **a red square**, **a yellow square**, **an H**, **an S** or **an U**. They are attached to the walls, so we need cameras on both sides of the robot to see them. Loading the model in Rust is accomplished thanks to the crate [od_opencv](https://crates.io/crates/od_opencv).
 
 ### <a id="pids"></a>PIDs
 
